@@ -140,7 +140,8 @@ through unchanged. Each implementation should document what it does when a handl
 
 - Go contract: [service-mesh-go](https://github.com/Paymentbox-com/service-mesh-go), module `github.com/Paymentbox-com/service-mesh-go`, imported as `github.com/Paymentbox-com/service-mesh-go/mesh`.
 - Go transport over NATS: [service-mesh-nats-go](https://github.com/Paymentbox-com/service-mesh-nats-go), module `github.com/Paymentbox-com/service-mesh-nats-go`, package `nats`.
-- Ruby: [service-mesh-nats-ruby](https://github.com/Paymentbox-com/service-mesh-nats-ruby), gem `service_mesh_nats`, contract and NATS transport in one gem.
+- Ruby contract: [service-mesh-ruby](https://github.com/Paymentbox-com/service-mesh-ruby), gem `service_mesh`, module `ServiceMesh`, with a conformance suite transports run.
+- Ruby transport over NATS: [service-mesh-nats-ruby](https://github.com/Paymentbox-com/service-mesh-nats-ruby), gem `service_mesh_nats`.
 
 Registering an endpoint and making a request looks like this in each.
 
@@ -163,14 +164,16 @@ reply, err := rt.Client().Request(ctx, mesh.Message{Target: echo, Payload: []byt
 ```
 
 ```ruby
-echo = ServiceMeshNats::Target.new(segments: %w[demo echo], kind: :route)
+require "service_mesh_nats"
+
+echo = ServiceMesh::Target.new(segments: %w[demo echo], kind: :route)
 config = {"url" => "nats://127.0.0.1:4222", "deployment_group" => "demo"}
 
-runtime = ServiceMeshNats::Runtime.new(config, ServiceMeshNats::ServiceMap.new(targets: [echo]),
-  endpoints: [ServiceMeshNats::Endpoint.new(target: echo, handler: ->(m) {
-    ServiceMeshNats::Message.new(target: echo, payload: m.payload)
+runtime = ServiceMeshNats::Runtime.new(config, ServiceMesh::ServiceMap.new(targets: [echo]),
+  endpoints: [ServiceMesh::Endpoint.new(target: echo, handler: ->(m) {
+    ServiceMesh::Message.new(target: echo, payload: m.payload)
   })])
 runtime.start
 
-reply = runtime.client.request(ServiceMeshNats::Message.new(target: echo, payload: "hi"))
+reply = runtime.client.request(ServiceMesh::Message.new(target: echo, payload: "hi"))
 ```
