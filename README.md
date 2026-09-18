@@ -129,3 +129,36 @@ The contract defines three errors, all raised for misuse of the contract.
 
 Transport errors, timeouts, and connection failures are the transport specific implementation's own exceptions and pass 
 through unchanged. Each implementation should document what it does when a handler raises.
+
+## Implementations
+
+- Go: [service-mesh-nats-go](https://github.com/Paymentbox-com/service-mesh-nats-go), module `github.com/Paymentbox-com/service-mesh-nats-go`, packages `mesh` and `nats`.
+- Ruby: [service-mesh-nats-ruby](https://github.com/Paymentbox-com/service-mesh-nats-ruby), gem `service_mesh_nats`.
+
+Both carry the transport over NATS. Registering an endpoint and making a request looks like this in each.
+
+```go
+echo := mesh.Target{Segments: []string{"demo", "echo"}, Kind: mesh.KindRoute}
+cfg := mesh.Config{nats.URLKey: "nats://127.0.0.1:4222", mesh.DeploymentGroupKey: "demo"}
+
+rt, err := nats.New(cfg, mesh.ServiceMap{Targets: []mesh.Target{echo}},
+    []mesh.Endpoint{{Target: echo, Handler: func(ctx context.Context, m mesh.Message) (mesh.Message, error) {
+        return mesh.Message{Payload: m.Payload}, nil
+    }}}, nil)
+err = rt.Start(ctx)
+
+reply, err := rt.Client().Request(ctx, mesh.Message{Target: echo, Payload: []byte("hi")}, nil)
+```
+
+```ruby
+echo = ServiceMeshNats::Target.new(segments: %w[demo echo], kind: :route)
+config = {"url" => "nats://127.0.0.1:4222", "deployment_group" => "demo"}
+
+runtime = ServiceMeshNats::Runtime.new(config, ServiceMeshNats::ServiceMap.new(targets: [echo]),
+  endpoints: [ServiceMeshNats::Endpoint.new(target: echo, handler: ->(m) {
+    ServiceMeshNats::Message.new(target: echo, payload: m.payload)
+  })])
+runtime.start
+
+reply = runtime.client.request(ServiceMeshNats::Message.new(target: echo, payload: "hi"))
+```
