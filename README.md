@@ -25,6 +25,10 @@ adhered to for each individual implementation in order to support interoperabili
 | `Client`     | The client access points for the transport layer.                                     |
 | `Runtime`    | The service process for async request handling.                                       |
 
+![ServiceMeshInterface.drawio.png](ServiceMeshInterface.drawio.png)
+
+![ServiceMeshFlow.drawio.png](ServiceMeshFlow.drawio.png)
+
 ### Target
 
 A `Target` identifies some receiving channel or entity on the service mesh. It can be a pub/sub topic, a named work queue, 
