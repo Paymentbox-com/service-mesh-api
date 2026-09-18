@@ -80,6 +80,12 @@ allowing clients on the service mesh to make requests. It exposes the following 
 A `Runtime` accepts a `Hash<String, String>` for configuration upon creation, as well as a `ServiceMap`, a list of 
 `Endpoints`, and a list of `Subscribers`. It also contains a `Client`.
 
+A `Runtime` is bound to one transport, and everything passed to it belongs to that transport. The `ServiceMap` it 
+receives holds only the `Targets` reachable over that transport, and the `Endpoints` and `Subscribers` are only 
+those served over it. A process that uses more than one transport constructs one `Runtime` per transport, each 
+with its own subset, and holds them through the common interface. A `Runtime` is never given a `Target` it cannot 
+carry.
+
 The `Runtime` provides the async process for handling the containing service's requests. It exposes three 
 lifecycle methods:
 
