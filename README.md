@@ -119,6 +119,12 @@ The transport-agnostic configuration is as follows:
   need to worry about duplicate handlers), a Queue Group for NATS based services, and so on. `deployment_group` should be 
   included in the configuration passed to the `Runtime` on the server side or to each `Target` on the client side, 
   as required by the transport specific implementation.
+
+  A `deployment_group` is also the unit of transport selection. Every `Target` in a deployment group is served over one 
+  transport, and a `Runtime` serves one deployment group. The mapping from a deployment group to a transport is owned by 
+  the layer above this specification, which is why a `Target` carries `deployment_group` in its metadata: a caller 
+  reads it to choose the `Client` for that transport, and a `Runtime` is handed only the `Endpoints`, `Subscribers`, 
+  and `ServiceMap` of its own deployment group.
 * `consumer_group`: This configuration provides a per `Target` logical group for a service's Endpoints and Subscribers to belong
   to, in order to control the cardinality between producers and consumers on the service mesh more directly. By default, 
   both Endpoints and Subscribers should use the containing service's `deployment_group` as their `consumer_group`, but a 
