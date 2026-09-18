@@ -138,12 +138,18 @@ through unchanged. Each implementation should document what it does when a handl
 
 ## Implementations
 
-- Go: [service-mesh-nats-go](https://github.com/Paymentbox-com/service-mesh-nats-go), module `github.com/Paymentbox-com/service-mesh-nats-go`, packages `mesh` and `nats`.
-- Ruby: [service-mesh-nats-ruby](https://github.com/Paymentbox-com/service-mesh-nats-ruby), gem `service_mesh_nats`.
+- Go contract: [service-mesh-go](https://github.com/Paymentbox-com/service-mesh-go), module `github.com/Paymentbox-com/service-mesh-go`, imported as `github.com/Paymentbox-com/service-mesh-go/mesh`.
+- Go transport over NATS: [service-mesh-nats-go](https://github.com/Paymentbox-com/service-mesh-nats-go), module `github.com/Paymentbox-com/service-mesh-nats-go`, package `nats`.
+- Ruby: [service-mesh-nats-ruby](https://github.com/Paymentbox-com/service-mesh-nats-ruby), gem `service_mesh_nats`, contract and NATS transport in one gem.
 
-Both carry the transport over NATS. Registering an endpoint and making a request looks like this in each.
+Registering an endpoint and making a request looks like this in each.
 
 ```go
+import (
+    "github.com/Paymentbox-com/service-mesh-go/mesh"
+    "github.com/Paymentbox-com/service-mesh-nats-go/nats"
+)
+
 echo := mesh.Target{Segments: []string{"demo", "echo"}, Kind: mesh.KindRoute}
 cfg := mesh.Config{nats.URLKey: "nats://127.0.0.1:4222", mesh.DeploymentGroupKey: "demo"}
 
