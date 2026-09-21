@@ -76,19 +76,20 @@ also contain a metadata object, which can be used for transport specific setting
 
 ### Client
 
-A `Client` accepts a `Hash<String, String>` for configuration upon construction and provides access to the underlying transport mechanism, 
-allowing clients on the service mesh to make requests. It exposes the following methods:
+A `Client` accepts a `Hash<String, String>` for configuration upon construction, as well as a `ServiceMap` holding only the 
+`Targets` reachable over its transport. It holds that `ServiceMap` and exposes it. A `Client` provides access to the underlying 
+transport mechanism, allowing clients on the service mesh to make requests. It exposes the following methods:
 
 * Request: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns a `Message` in reply.
 * Publish: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns nothing.
 
 A concrete `Client` implementation is transport-specific, and should not be used to make requests or to publish messages
-against a `Target` that is not available on its specific transport. 
+against a `Target` that is not in its `ServiceMap`. 
 
 ### Runtime
 
 A `Runtime` accepts a `Hash<String, String>` for configuration upon creation, as well as a `ServiceMap`, a list of 
-`Endpoints`, and a list of `Subscribers`. It also contains a `Client`.
+`Endpoints`, and a list of `Subscribers`. It also contains a `Client`, constructed with the same configuration and `ServiceMap`.
 
 A `Runtime` is bound to one transport mechanism, so everything passed to it must be available on that transport. The 
 `ServiceMap` it receives should hold only the `Targets` reachable over that transport, and the `Endpoints` and `Subscribers` 
