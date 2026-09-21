@@ -194,3 +194,11 @@ runtime.start
 
 reply = runtime.client.request(ServiceMesh::Message.new(target: echo, payload: "hi"))
 ```
+
+## Protocol layers
+
+A protocol layer builds on this contract and generates the code applications call, leaving the transport to an implementation above.
+
+- gRPC Service Mesh API: [grpc-service-mesh-api](https://github.com/Paymentbox-com/grpc-service-mesh-api), the specification and the generator `grpc-service-mesh-gen`, which compiles protobuf service definitions into `Targets`, `Endpoints`, `Subscribers`, and clients against this contract.
+- Go library: [grpc-service-mesh-go](https://github.com/Paymentbox-com/grpc-service-mesh-go), module `github.com/Paymentbox-com/grpc-service-mesh-go`, package `grpcmesh`.
+- Ruby library: [grpc-service-mesh-ruby](https://github.com/Paymentbox-com/grpc-service-mesh-ruby), gem `grpc_service_mesh`.
