@@ -56,6 +56,9 @@ an array of `Bytes` (or its equivalent for whichever language the implementation
 does not serialize or deserialize messages, but sends and receives raw bytes, leaving the encoding and decoding
 up to the consumer.
 
+Both a `Message`'s metadata and its payload should be sent on the transport layer, in whatever way is most 
+appropriate for that transport layer.
+
 *Note: raw bytes may take different forms in different languages. For example, in Ruby it would be a `String` 
 with `Encoding::BINARY`, but in Go it would be a `[]Byte`*
 
