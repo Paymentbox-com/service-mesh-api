@@ -83,8 +83,7 @@ transport mechanism, allowing clients on the service mesh to make requests. It e
 * Request: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns a `Message` in reply.
 * Publish: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns nothing.
 * Close: Releases the `Client`'s connection. A `Client` that has been closed accepts no further requests. A `Client` 
-  obtained from a `Runtime` shares the `Runtime`'s connection, so its Close does nothing and the connection is released 
-  by the `Runtime`'s Stop.
+  obtained from a `Runtime` shares the `Runtime`'s connection, and the `Runtime`'s Stop closes it.
 
 A concrete `Client` implementation is transport-specific, and should not be used to make requests or to publish messages
 against a `Target` that is not in its `ServiceMap`. 
