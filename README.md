@@ -92,7 +92,7 @@ against a `Target` that is not in its `ServiceMap`.
 
 A `Runtime` accepts a `Client` upon creation, together with a `Hash<String, String>` for configuration, a list of 
 `Endpoints`, and a list of `Subscribers`. The `Client` is the `Runtime`'s connection to the transport: the application 
-constructs it, the `Runtime` binds its `Endpoints` and `Subscribers` on it, and the `Runtime`'s `ServiceMap` is the 
+constructs it, the `Runtime` subscribes each of its `Endpoints` and `Subscribers` on it, and the `Runtime`'s `ServiceMap` is the 
 `Client`'s. The `Runtime` exposes that `Client`, and Stop closes it.
 
 A `Runtime` is bound to one transport mechanism, so everything passed to it must be available on that transport. The 
@@ -104,7 +104,7 @@ per transport, each with its own subset, but uses them through the common interf
 The `Runtime` provides the async process for handling the containing service's requests. It exposes three 
 lifecycle methods:
 
-* Start: Binds every `Endpoint` and `Subscriber` on the `Client`'s connection and begins receiving.
+* Start: Subscribes every `Endpoint` and `Subscriber` on the `Client`'s connection and begins receiving.
 * Stop: Accepts a drain duration as a non-negative `Float` of seconds. Stops receiving, waits up to that long for in-flight handlers to finish, then 
   closes the `Client`. Handlers still running at the end of the drain are abandoned.
 * Running: Returns whether `Start` has succeeded and `Stop` has not run.
