@@ -83,19 +83,20 @@ transport mechanism, allowing clients on the service mesh to make requests. It e
 * Request: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns a `Message` in reply.
 * Publish: Accepts a `Message` and a `Hash<String, String>` for transport specific options. Returns nothing.
 * Close: Releases the `Client`'s connection. A `Client` that has been closed accepts no further requests. A `Client` 
-  obtained from a `Runtime` is the `Runtime`'s connection, and the `Runtime`'s Stop closes it.
+  given to a `Runtime` is the `Runtime`'s connection, and the `Runtime`'s Stop closes it.
 
 A concrete `Client` implementation is transport-specific, and should not be used to make requests or to publish messages
 against a `Target` that is not in its `ServiceMap`. 
 
 ### Runtime
 
-A `Runtime` accepts a `Hash<String, String>` for configuration upon creation, as well as a `ServiceMap`, a list of 
-`Endpoints`, and a list of `Subscribers`. It also contains a `Client`, constructed with the same configuration and `ServiceMap`, which owns the `Runtime`'s 
-connection: Start connects it and Stop closes it. Closing that `Client` directly ends the `Runtime`'s connection as well.
+A `Runtime` accepts a `Client` upon creation, together with a `Hash<String, String>` for configuration, a list of 
+`Endpoints`, and a list of `Subscribers`. The `Client` is the `Runtime`'s connection to the transport: the application 
+constructs it, the `Runtime` binds its `Endpoints` and `Subscribers` on it, and the `Runtime`'s `ServiceMap` is the 
+`Client`'s. The `Runtime` exposes that `Client`, and Stop closes it.
 
 A `Runtime` is bound to one transport mechanism, so everything passed to it must be available on that transport. The 
-`ServiceMap` it receives should hold only the `Targets` reachable over that transport, and the `Endpoints` and `Subscribers` 
+`ServiceMap` of its `Client` holds only the `Targets` reachable over that transport, and the `Endpoints` and `Subscribers` 
 are only those served over it by the containing service. A process that uses more than one transport constructs one `Runtime` 
 per transport, each with its own subset, but uses them through the common interface. A `Runtime` should never be given a 
 `Target` that is meant to be accessed on a different transport.
@@ -103,9 +104,9 @@ per transport, each with its own subset, but uses them through the common interf
 The `Runtime` provides the async process for handling the containing service's requests. It exposes three 
 lifecycle methods:
 
-* Start: Connects, binds every `Endpoint` and `Subscriber`, and begins receiving.
+* Start: Binds every `Endpoint` and `Subscriber` on the `Client`'s connection and begins receiving.
 * Stop: Accepts a drain duration as a non-negative `Float` of seconds. Stops receiving, waits up to that long for in-flight handlers to finish, then 
-  closes. Handlers still running at the end of the drain are abandoned.
+  closes the `Client`. Handlers still running at the end of the drain are abandoned.
 * Running: Returns whether `Start` has succeeded and `Stop` has not run.
 
 A `Runtime` is not restartable. Calling `Start` after `Stop` is an error the implementation defines. Signal 
@@ -174,7 +175,8 @@ import (
 echo := mesh.Target{Segments: []string{"demo", "echo"}, Kind: mesh.KindRoute}
 cfg := mesh.Config{nats.URLKey: "nats://127.0.0.1:4222", mesh.DeploymentGroupKey: "demo"}
 
-rt, err := nats.New(cfg, mesh.ServiceMap{Targets: []mesh.Target{echo}},
+client, err := nats.NewClient(cfg, mesh.ServiceMap{Targets: []mesh.Target{echo}})
+rt, err := nats.New(client, cfg,
     []mesh.Endpoint{{Target: echo, Handler: func(ctx context.Context, m mesh.Message) (mesh.Message, error) {
         return mesh.Message{Payload: m.Payload}, nil
     }}}, nil)
@@ -189,7 +191,8 @@ require "service_mesh_nats"
 echo = ServiceMesh::Target.new(segments: %w[demo echo], kind: :route)
 config = {"url" => "nats://127.0.0.1:4222", "deployment_group" => "demo"}
 
-runtime = ServiceMeshNats::Runtime.new(config, ServiceMesh::ServiceMap.new(targets: [echo]),
+client = ServiceMeshNats::Client.new(config, ServiceMesh::ServiceMap.new(targets: [echo]))
+runtime = ServiceMeshNats::Runtime.new(client, config,
   endpoints: [ServiceMesh::Endpoint.new(target: echo, handler: ->(m) {
     ServiceMesh::Message.new(target: echo, payload: m.payload)
   })])
