@@ -3,10 +3,10 @@
 The Service Mesh API Specification is a contract between application code and a transport-specific 
 runtime designed to make implementing a service mesh architecture easier and more straightforward. It
 does this by cleanly separating the concerns of transport logic and application layer protocols, enabling
-each aspect of the service mesh to change independently. In this way, a service mesh can be implemented 
-using a single protocol, but multiple transport mechanisms to suit different purposes. In this case, it
-would look nearly identical from each service's standpoint, as their bespoke code would be consuming the
-same API contract no matter what transport was being used. Or, it may be implemented with multiple protocols, 
+each aspect of the service mesh to change independently. Using this specification, a service mesh can be implemented 
+using a single protocol, but multiple transport mechanisms to suit different purposes. This would enable things 
+to look nearly identical from each service's standpoint, as their bespoke application code would be consuming the
+same API contract no matter what transport was being used. Or, services may be implemented with multiple protocols, 
 in which case only the higher level encoding/decoding would look different, and the transport layer could be 
 reused.
 
