@@ -208,3 +208,15 @@ A protocol layer builds on this contract and generates the code applications cal
 - gRPC Service Mesh API: [grpc-service-mesh-api](https://github.com/Paymentbox-com/grpc-service-mesh-api), the specification and the generator `grpc-service-mesh-gen`, which compiles protobuf service definitions into `Targets`, `Endpoints`, `Subscribers`, and clients against this contract.
 - Go library: [grpc-service-mesh-go](https://github.com/Paymentbox-com/grpc-service-mesh-go), module `github.com/Paymentbox-com/grpc-service-mesh-go`, package `grpcmesh`.
 - Ruby library: [grpc-service-mesh-ruby](https://github.com/Paymentbox-com/grpc-service-mesh-ruby), gem `grpc_service_mesh`.
+
+## Development
+
+```
+mise install
+just check      # relative links and anchors in the Markdown files
+```
+
+`just links` also checks external links. A release is a tag. `just bump patch`,
+`just bump minor`, or `just bump major` raises the version in `VERSION` and
+commits that file. After the commit is pushed and passes CI, `just release`
+tags the commit with it and pushes the tag.
