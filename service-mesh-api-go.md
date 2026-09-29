@@ -82,7 +82,7 @@ type Client interface {
 Each transport package exports
 
 ```go
-func NewClient(cfg mesh.Config, opts ...Option) (mesh.Client, error)
+func NewClient(cfg mesh.Config, sm mesh.ServiceMap) (*Client, error)
 ```
 
 `opts` on `Request` and `Publish` is the specification's per-call
@@ -105,7 +105,7 @@ type Runtime interface {
 Each transport package exports
 
 ```go
-func New(cfg mesh.Config, sm mesh.ServiceMap, endpoints []mesh.Endpoint, subscribers []mesh.Subscriber, opts ...Option) (mesh.Runtime, error)
+func New(client *Client, cfg mesh.Config, endpoints []mesh.Endpoint, subscribers []mesh.Subscriber, opts ...Option) (*Runtime, error)
 ```
 
 `Stop` stops receiving, waits for in-flight handlers until `ctx` is done,
