@@ -130,12 +130,14 @@ const (
 )
 ```
 
-`DeploymentGroupKey` is required in the `Config` given to `New`; its absence
-returns `ErrNoDeploymentGroup`. `NewClient` reads it only if the transport
-needs it on the client side, as that transport documents.
+`DeploymentGroupKey` is required in the `Config` given to `New`, and its
+absence returns `ErrNoDeploymentGroup`. It is runtime configuration only.
+`Target.Metadata`, `Endpoint.Metadata`, and `Subscriber.Metadata` never carry
+it.
 
-`ConsumerGroupKey` is read from `Endpoint.Metadata`, `Subscriber.Metadata`,
-or `Target.Metadata`, as the transport documents.
+`ConsumerGroupKey` is read from `Endpoint.Metadata` and `Subscriber.Metadata`.
+When it is unset or empty, the runtime's deployment group applies, and
+`ConsumerGroupNone` means no group. `Target.Metadata` never carries it.
 
 ## Errors
 

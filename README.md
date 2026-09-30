@@ -40,7 +40,10 @@ the separator to form a valid NATS topic, while an HTTP implementation might use
 Each `Target` also declares its `kind`, which is either `route` or `topic`. A `Target` with `kind = route` is one
 that replies to requests with a reply message. A `Target` with `kind = topic` is one that does not reply.
 
-A `Target` also contains a `Hash<String, String>` metadata object to hold transport specific configuration.
+A `Target` also contains a `Hash<String, String>` metadata object to hold transport specific configuration. A `Target`
+is an address, used alike by the clients that send to it and the `Endpoints` and `Subscribers` that receive from it, so
+its metadata holds only addressing. It never carries `deployment_group` or `consumer_group`, which describe receivers, as
+described under [Configuration](#configuration).
 
 ### ServiceMap
 
@@ -66,13 +69,15 @@ with `Encoding::BINARY`, but in Go it would be a `[]Byte`*
 
 An `Endpoint` is the pairing of a `Target` with `kind = route` and a message handler that responds to requests to 
 that `Target`. The handler must receive a `Message` and return a `Message` as the reply to the request. `Endpoints`
-also contain a metadata object, which can be used for transport specific settings.
+also contain a metadata object, which can be used for transport specific settings and holds the `Endpoint`'s
+`consumer_group`.
 
 ### Subscriber
 
 A `Subscriber` is the pairing of a `Target` with `kind = topic` and a message handler that responds to requests to
 that `Target`. The handlers must receive a `Message` and return nothing. `Subscribers`
-also contain a metadata object, which can be used for transport specific settings.
+also contain a metadata object, which can be used for transport specific settings and holds the `Subscriber`'s
+`consumer_group`.
 
 ### Client
 
@@ -120,29 +125,26 @@ global configuration, and defines only transport-agnostic configuration itself.
 
 The transport-agnostic configuration is as follows:
 
-* `deployment_group`: This configuration provides the global, logical group that a service on the service mesh belongs to. 
-  It can group instances of a single service, allowing the transport layer to decide for itself how to handle duplicate 
-  instances of the same handlers, or it can simply tell the transport layer something about where it will be receiving 
-  requests. In practice, this can be a shared base URL for HTTP based Services (in which case it probably won't 
-  need to worry about duplicate handlers), a Queue Group for NATS based services, and so on. `deployment_group` should be 
-  included in the configuration passed to the `Runtime` on the server side or to each `Target` on the client side, 
-  as required by the transport specific implementation.
+* `deployment_group`: This configuration provides the global, logical group that a running service belongs to. It
+  groups the instances of a single service, allowing the transport layer to decide for itself how to handle duplicate
+  instances of the same handlers. In practice, this can be a shared base URL for HTTP based services, a Queue Group for
+  NATS based services, and so on.
 
-  A `deployment_group` is also the unit of transport selection. Every `Target` in a deployment group is served over one 
-  transport, and a `Runtime` serves one deployment group. The mapping from a deployment group to a transport is owned by 
-  the layer above this specification, which is why a `Target` carries `deployment_group` in its metadata: a caller 
-  reads it to choose the `Client` for that transport, and a `Runtime` is handed only the `Endpoints`, `Subscribers`, 
-  and `ServiceMap` of its own deployment group.
-* `consumer_group`: This configuration provides a per `Target` logical group for a service's Endpoints and Subscribers to belong
-  to, in order to control the cardinality between producers and consumers on the service mesh more directly. By default, 
-  both Endpoints and Subscribers should use the containing service's `deployment_group` as their `consumer_group`, but a 
-  transport specific implementation may allow this to be overridden by passing `consumer_group` on the metadata of any given
-  `Target`, `Endpoint` or `Subscriber` (depending on how the transport logic needs to access it). When this configuration 
-  is used, the value `"none"` should mean that there should be no logical group (nullifying the `deployment_group` default 
-  if applied). With `consumer_group` set to "none", an Endpoint or Subscriber should handle all messages sent to its Target, 
-  regardless if it has duplicate instances running, and it should be expected for all instances to do so. With any other value, 
-  it should be expected that only one handler within the designated logical group will handle any given message (though handlers 
-  outside that group may still handle it if they have the same `Target`).
+  `deployment_group` is configuration of the `Runtime`, and nothing else carries it. `Targets`, `Endpoints`, and
+  `Subscribers` do not. Every `Runtime` requires it, and a `Runtime` constructed without it raises `NoDeploymentGroup`.
+  It is the default `consumer_group` of every `Endpoint` and `Subscriber` the `Runtime` serves.
+* `consumer_group`: This configuration provides the logical group an `Endpoint` or `Subscriber` belongs to, in order to
+  control the cardinality between producers and consumers on the service mesh more directly. It is metadata on the
+  `Endpoint` or `Subscriber`, not on its `Target`, because one `Target` can have many receivers, each in its own group.
+  A transport resolves the group of each `Endpoint` and `Subscriber` as follows:
+
+  1. The `Endpoint`'s or `Subscriber`'s `consumer_group` metadata, if it is set and not empty.
+  2. Otherwise the `Runtime`'s `deployment_group`.
+
+  The value `"none"` means there is no logical group. An `Endpoint` or `Subscriber` in no group handles all messages
+  sent to its `Target`, even when it has duplicate instances running, and all instances are expected to do so. With any
+  other value, only one handler within the group handles any given message, while handlers in other groups with the
+  same `Target` also receive it.
 
 ## Errors
 
