@@ -57,13 +57,40 @@ A `Message` is the thing that gets sent back and forth between services. It cont
 `Hash<String, String>` object for metadata and any runtime specific parameters, and a payload in the form of
 an array of `Bytes` (or its equivalent for whichever language the implementation is in). This API specification 
 does not serialize or deserialize messages, but sends and receives raw bytes, leaving the encoding and decoding
-up to the consumer.
+up to the consumer. Metadata keys that start with `Mesh-` are reserved, as described under [Metadata](#metadata).
 
 Both a `Message`'s metadata and its payload should be sent on the transport layer, in whatever way is most 
 appropriate for that transport layer.
 
 *Note: raw bytes may take different forms in different languages. For example, in Ruby it would be a `String` 
 with `Encoding::BINARY`, but in Go it would be a `[]Byte`*
+
+### Metadata
+
+The `Mesh-` prefix is reserved in all `Message` metadata for transport and protocol layers, and should not be used by
+application business logic.
+
+A key that starts with `Mesh-` and does not name a transport is defined by this specification or by a protocol layer's
+specification, and means the same thing on every transport.
+
+A key a transport defines for itself starts with `Mesh-` followed by the transport's name, such as `Mesh-Nats-`, so
+keys from two transports never collide.
+
+This specification defines the following keys. A transport may use any of them. A transport that uses one follows the
+meaning and format given here.
+
+| key                     | set by                                                     | meaning and format                                                                                                                                                                                                        |
+|-------------------------|------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Mesh-Handler-Error`    | the serving transport on a reply                           | The `Endpoint`'s handler failed. The value is the failure's text.                                                                                                                                                        |
+| `Mesh-Timeout`          | the requesting transport on a request                      | How long the caller waits for the reply, as a whole number of milliseconds. It is relative, so it does not depend on the hosts' clocks agreeing.                                                                         |
+| `Mesh-Deadline`         | the receiving transport on a message it hands to a handler | When the handler's result stops mattering, in RFC 3339 with fractional seconds. For a request it is the arrival time plus `Mesh-Timeout`. For a delivery that is sent again unless acked, it is the redelivery time. |
+| `Mesh-Delivery-Attempt` | the receiving transport on a message it hands to a handler | Which delivery of the message this is, starting at 1. Absent when the transport does not track deliveries.                                                                                                                |
+| `Mesh-Message-Id`       | the publisher or caller                                    | An ID that stays the same when the same message is sent again, so handlers can recognize repeats.                                                                                                                         |
+
+A transport does not define a key of its own for something one of these keys already covers. When the transport has a
+native field with the same meaning, it treats the native field and the metadata field defined here as one field. When
+sending, the metadata field defined here wins, and the transport sets the native field from it. When receiving, the
+native field wins, and the transport sets the metadata field defined here from it.
 
 ### Endpoint
 
@@ -157,7 +184,8 @@ The contract defines three errors, all raised for misuse of the contract.
 | `NoDeploymentGroup` | `Runtime` is constructed without `config["deployment_group"]`                                                                                     |
 
 Transport errors, timeouts, and connection failures are the transport specific implementation's own exceptions and pass 
-through unchanged. Each implementation should document what it does when a handler raises.
+through unchanged. A transport may report a failed `Endpoint` handler by setting `Mesh-Handler-Error` on the reply, as
+described under [Metadata](#metadata). Each implementation should document what it does when a handler raises.
 
 ## Implementations
 
