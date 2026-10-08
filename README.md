@@ -15,15 +15,15 @@ reused.
 The core concepts defined by this api specification are as follows. Type names and member names should be 
 adhered to for each individual implementation in order to support interoperability.
 
-| type         | members                                                                               |
-|--------------|---------------------------------------------------------------------------------------|
-| `Target`     | `segments: Array<String>`, `kind: :route \| :topic`, `metadata: Hash<String, String>` |
-| `ServiceMap` | `targets: Array<Target>`, every available Target in the mesh.                         |
-| `Message`    | `target: Target`, `metadata: Hash<String, String>`, `payload: Array<Byte>`            |
-| `Endpoint`   | `target: Target`, `metadata: Hash<String, String>`, `handler: (Message) -> Message`   |
-| `Subscriber` | `target: Target`, `metadata: Hash<String, String>`, `handler: (Message) -> nil`       |
-| `Client`     | The client access points for the transport layer.                                     |
-| `Runtime`    | The service process for async request handling.                                       |
+| type         | members                                                                                                         |
+|--------------|-----------------------------------------------------------------------------------------------------------------|
+| `Target`     | `segments: Array<String>`, `kind: :route \| :topic`, `metadata: Hash<String, String>`                           |
+| `ServiceMap` | `targets: Array<Target>`, every available Target in the mesh.                                                   |
+| `Message`    | `target: Target`, `metadata: Hash<String, String>`, `payload: Array<Byte>`                                      |
+| `Endpoint`   | `target: Target`, `consumer_group: String`, `metadata: Hash<String, String>`, `handler: (Message) -> Message`   |
+| `Subscriber` | `target: Target`, `consumer_group: String`, `metadata: Hash<String, String>`, `handler: (Message) -> nil`       |
+| `Client`     | The client access points for the transport layer.                                                               |
+| `Runtime`    | The service process for async request handling.                                                                 |
 
 ![ServiceMeshInterface.drawio.png](ServiceMeshInterface.drawio.png)
 
@@ -41,9 +41,9 @@ Each `Target` also declares its `kind`, which is either `route` or `topic`. A `T
 that replies to requests with a reply message. A `Target` with `kind = topic` is one that does not reply.
 
 A `Target` also contains a `Hash<String, String>` metadata object to hold transport specific configuration. A `Target`
-is an address, used alike by the clients that send to it and the `Endpoints` and `Subscribers` that receive from it, so
-its metadata holds only addressing. It never carries `deployment_group` or `consumer_group`, which describe receivers, as
-described under [Configuration](#configuration).
+is an address, used alike by the clients that send to it and the `Endpoints` and `Subscribers` that receive from it. Its
+metadata holds addressing and the default transport settings for the `Target`, which a transport reads as described under
+[Configuration](#configuration). It never carries `deployment_group` or `consumer_group`, which describe receivers.
 
 ### ServiceMap
 
@@ -96,15 +96,15 @@ native field wins, and the transport sets the metadata field defined here from i
 
 An `Endpoint` is the pairing of a `Target` with `kind = route` and a message handler that responds to requests to 
 that `Target`. The handler must receive a `Message` and return a `Message` as the reply to the request. `Endpoints`
-also contain a metadata object, which can be used for transport specific settings and holds the `Endpoint`'s
-`consumer_group`.
+also hold a `consumer_group`, described under [Configuration](#configuration), and a metadata object for transport
+specific settings.
 
 ### Subscriber
 
 A `Subscriber` is the pairing of a `Target` with `kind = topic` and a message handler that responds to requests to
 that `Target`. The handlers must receive a `Message` and return nothing. `Subscribers`
-also contain a metadata object, which can be used for transport specific settings and holds the `Subscriber`'s
-`consumer_group`.
+also hold a `consumer_group`, described under [Configuration](#configuration), and a metadata object for transport
+specific settings.
 
 ### Client
 
@@ -161,17 +161,27 @@ The transport-agnostic configuration is as follows:
   `Subscribers` do not. Every `Runtime` requires it, and a `Runtime` constructed without it raises `NoDeploymentGroup`.
   It is the default `consumer_group` of every `Endpoint` and `Subscriber` the `Runtime` serves.
 * `consumer_group`: This configuration provides the logical group an `Endpoint` or `Subscriber` belongs to, in order to
-  control the cardinality between producers and consumers on the service mesh more directly. It is metadata on the
-  `Endpoint` or `Subscriber`, not on its `Target`, because one `Target` can have many receivers, each in its own group.
+  control the cardinality between producers and consumers on the service mesh more directly. It is a field of the
+  `Endpoint` or `Subscriber`, not of its `Target`, because one `Target` can have many receivers, each in its own group.
   A transport resolves the group of each `Endpoint` and `Subscriber` as follows:
 
-  1. The `Endpoint`'s or `Subscriber`'s `consumer_group` metadata, if it is set and not empty.
+  1. The `Endpoint`'s or `Subscriber`'s `consumer_group` field, if it is set and not empty.
   2. Otherwise the `Runtime`'s `deployment_group`.
 
   The value `"none"` means there is no logical group. An `Endpoint` or `Subscriber` in no group handles all messages
   sent to its `Target`, even when it has duplicate instances running, and all instances are expected to do so. With any
   other value, only one handler within the group handles any given message, while handlers in other groups with the
   same `Target` also receive it.
+
+A transport defines its own settings, and reads each one from the first of these places that has a value:
+
+1. The per-call options of `Request` or `Publish`.
+2. The `Endpoint`'s or `Subscriber`'s metadata.
+3. The `Target`'s metadata.
+4. The transport's own default.
+
+Per-call options apply only to `Request` and `Publish`, and `Endpoint` and `Subscriber` metadata only to the `Runtime`.
+A setting is ignored wherever it appears on a side that does not read it.
 
 ## Errors
 
